@@ -7,7 +7,7 @@ use yandex_music::YandexMusicClient;
 mod config;
 mod webserver;
 
-#[tokio::main]
+#[rocket::main]
 async fn main() {
     let config_path = PathBuf::from("config.toml");
     let config = task::spawn( async {

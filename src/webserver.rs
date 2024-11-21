@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::sync::Arc;
 use rocket:: State;
 
@@ -13,21 +14,24 @@ pub async fn build_rocket(client: Arc<YandexMusicClient>) -> Rocket<Build> {
 
 #[get("/song/<track_id>")]
 async fn get_song_by_id(track_id: i32, client: &State<Arc<YandexMusicClient>>) {
-    let download_link = &client.clone().get_track_download_info(track_id).await.unwrap();
+    let download_link = &client.get_track_download_info(track_id).await.unwrap();
     let download_link = &download_link[0];
     let download_link = &download_link.download_info_url;
     
     let track = &client.get_track(track_id).await.unwrap();
-    let track = &track[0];
+    let track = Rc::new(track[0].clone());
+    
+    let artist = track.artists[0].clone().name.unwrap();
+    let album = track.clone().albums[0].clone().title.unwrap();
     
     let track_dur_mins = &track.duration_ms.unwrap() / 1000 / 60;
-    let track_dur_secs = &(track.duration_ms.unwrap() / 1000) - (&track_dur_mins * 60);
+    let track_dur_secs = (track.duration_ms.unwrap() / 1000) - (&track_dur_mins * 60);
     
     let track_info = json!({
         "track_id": track_id,
-        "title": &track.title.unwrap(),
+        "title": *track.title.clone().unwrap(),
         "artist": artist,
-        "img": &track.cover_uri.unwrap(),
+        "img": *track.cover_uri.clone().unwrap(),
         "duration": &track.duration_ms.unwrap() / 1000,
         "minutes": track_dur_mins,
         "seconds": track_dur_secs,
